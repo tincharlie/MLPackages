@@ -10,6 +10,58 @@ from sklearn.metrics import accuracy_score, f1_score
 
 
 class preprocessing:
+    """
+    This class shows some details about the dataset also preprocessing.
+    """
+
+    def __init__(self, df):
+
+        self.df = df
+        print()
+        print('Information object is created')
+        print()
+
+    def details(self, df):
+        """
+        desc: This function finds the missing values in the dataset
+        :param df: DataFrame- The data you to wanna see the details about.
+        :return: return the missing values in  descending order.
+        """
+        # get the sum of all missing values in the dataset
+        self.missing_values = df.isnull().sum()
+        # sorting the missing values in a pandas Series
+        self.missing_values = self.missing_values.sort_values(ascending=False)
+
+        # returning the missing values Series
+        print("=" * 50)
+        print("Missing Values in the dataset. ====>  ", self.missing_values)
+        print("=" * 50)
+        print()
+        # Skewness in the dataset.
+        self.skewed_data = self.df.skew()
+        self.skewed_data = self.skewed_data.sort_values(ascending=False)
+        print("=" * 50)
+        print("Skewed Columns in the dataset. ====>  ", self.skewed_data)
+        print("=" * 50)
+        print()
+        feature_dtypes = self.df.dtypes
+        print("=" * 50)
+        print("Data types of the dataset. ====>  ", feature_dtypes)
+        print("=" * 50)
+        print()
+
+        rows, columns = self.df.shape
+        print("=" * 50)
+        print('====> This data contains {} rows and {} columns'.format(rows, columns))
+        print("=" * 50)
+        print()
+
+        correlation = self.df.corr()
+        print("=" * 50)
+        print('====> This is the correlation of dataset  ', correlation)
+        print("=" * 50)
+        print()
+
     def replacer(self, df):
         """
         desc: This is the replacer function for our data. To replace the missing values in dataset.
@@ -275,7 +327,6 @@ class MLModels:
         pred = le.fit_transform(pred)
         print("f1 score", f1_score(Y, pred))
         return model, accuracy_score(Y, pred)
-
 
     def RndmFrstRgrModel(self, X, Y):
         """
