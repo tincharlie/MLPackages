@@ -4,19 +4,19 @@ from statsmodels.formula.api import ols
 from statsmodels.stats.anova import anova_lm
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import accuracy_score, f1_score
+import hvplot.pandas
+pd.options.plotting.backend = 'holoviews'
 
-
-class preprocessing:
+class Preprocessing:
     """
-    This class shows some details about the dataset also preprocessing.
+    This class shows some information about the dataset
     """
 
-    def __init__(self, df):
+    def __init__(self):
 
-        self.df = df
         print()
         print('Information object is created')
         print()
@@ -27,38 +27,39 @@ class preprocessing:
         :param df: DataFrame- The data you to wanna see the details about.
         :return: return the missing values in  descending order.
         """
+        self.df = df
         # get the sum of all missing values in the dataset
-        self.missing_values = df.isnull().sum()
+        self.missing_values = self.df.isnull().sum()
         # sorting the missing values in a pandas Series
         self.missing_values = self.missing_values.sort_values(ascending=False)
 
         # returning the missing values Series
         print("=" * 50)
-        print("Missing Values in the dataset. ====>  ", self.missing_values)
+        print("Missing Values in the dataset. ====>  \n", self.missing_values)
         print("=" * 50)
         print()
         # Skewness in the dataset.
         self.skewed_data = self.df.skew()
         self.skewed_data = self.skewed_data.sort_values(ascending=False)
         print("=" * 50)
-        print("Skewed Columns in the dataset. ====>  ", self.skewed_data)
+        print("Skewed Columns in the dataset. ====>  \n", self.skewed_data)
         print("=" * 50)
         print()
         feature_dtypes = self.df.dtypes
         print("=" * 50)
-        print("Data types of the dataset. ====>  ", feature_dtypes)
+        print("Data types of the dataset. ====>  \n", feature_dtypes)
         print("=" * 50)
         print()
 
         rows, columns = self.df.shape
         print("=" * 50)
-        print('====> This data contains {} rows and {} columns'.format(rows, columns))
+        print('====> This data contains {} rows and {} columns '.format(rows, columns))
         print("=" * 50)
         print()
 
         correlation = self.df.corr()
         print("=" * 50)
-        print('====> This is the correlation of dataset  ', correlation)
+        print('====> This is the correlation of dataset  \n', correlation)
         print("=" * 50)
         print()
 
@@ -143,11 +144,11 @@ class preprocessing:
 
         import pandas as pd
         df = df.drop(labels=cols_to_drop, axis=1)
-        re = preprocessing()
+        re = Preprocessing()
         self.replacer(df)
         Y = df[Ycol]
         X = df.drop(labels=Ycol, axis=1)
-        X_new = preprocessing(X)
+        X_new = Preprocessing(X)
         from sklearn.model_selection import train_test_split
         xtrain, xtest, ytrain, ytest = train_test_split(X_new, Y, test_size=0.2, random_state=31)
         if (ytrain[Ycol[0]].dtypes == "object"):
@@ -166,11 +167,11 @@ class preprocessing:
         :return: It returns the best parameter which you can pass with your model and make the better one.
         """
         df = df.drop(labels=cols_to_drop, axis=1)
-        re = preprocessing()
+        # re = Preprocessing()
         self.replacer(df)
         Y = df[Ycol]
         X = df.drop(labels=Ycol, axis=1)
-        X_new = preprocessing(X)
+        X_new = self.preprocessing(X)
         from sklearn.model_selection import train_test_split
         xtrain, xtest, ytrain, ytest = train_test_split(X_new, Y, test_size=0.2, random_state=31)
         if (ytrain[Ycol[0]].dtypes == "object"):
@@ -217,7 +218,7 @@ class preprocessing:
         :param figsize: You have to pass the figure size of a chart eg. (25, 35)
         :param rows: You can specify rows. To show your charts in the good form.
             This depends on your data eg. data contains 12 columns so you can pass 4
-        :param columns: You can specify Clumns to show the charts
+        :param columns: You can specify Columns to show the charts
             This depends on your data eg. data contains 12 columns so you can pass 3
         :return: Return two kind of charts 1. Scatter, and 2. Boxplot
         """
@@ -235,6 +236,76 @@ class preprocessing:
                 sns.scatterplot(df[i], df[Y])
                 x = x + 1
 
+    def HistPlotCat(self, cat_or_con, data, target_col_name, rows=10, cols=3):
+        """
+        desc: This method is Histogram Plot. Shows the
+        :param cat_or_con: Categorical or Continuous columns
+        :param data: DataFrame
+        :param target_col_name: Target Column Name Eg: TypeOfCar
+        :param rows: Rows by default -> 10
+        :param cols: Columns by default -> 3
+        :return: Histogram Chart
+        """
+
+        import matplotlib.pyplot as plt
+        plt.figure(figsize=(15, 15))
+        for i, column in enumerate(cat_or_con, 1):
+            plt.subplot(rows, cols, i)
+            data[data[target_col_name] == 0][column].hist(bins=35, color='blue', label='NO', alpha=0.6)
+            data[data[target_col_name] == 1][column].hist(bins=35, color='red', label='YES', alpha=0.6)
+            plt.legend()
+            plt.xlabel(column)
+
+    def CorrBarHorizonPlot(self, data, target):
+        """
+        desc: Correlation chart between the target feature and rest of the feature
+        :param data: DataFrame
+        :param target: Ycolumn Eg: Price, Profit, SaleProfit
+        :return: Return the correlation of data.
+        """
+        return data.drop(target, axis=1).corrwith(data[target]).hvplot.barh(
+            width=600, height=400,
+            title=f"Correlation between {target} feature and Numeric Features",
+            ylabel='Correlation', xlabel='Numerical Features',
+        )
+
+    def CountPlotClassification(self, data, target, xcol):
+        """
+        desc: This is count plot for classification. It basically make the count chart.
+        :param data: DataFrame
+        :param target: Main Feature
+        :param xcol: Single Column
+        :return: Return the count plot
+        """
+        Yes = data.loc[data[target] == 1, xcol].value_counts().hvplot.bar(alpha=0.4)
+        No = data.loc[data[target] == 0, xcol].value_counts().hvplot.bar(alpha=0.4)
+
+        return (No * Yes).opts(
+            title=f"{target} by {xcol}",
+            xlabel= f'{xcol} (1 = true; 0 = false)',
+            ylabel='Count', width=500, height=450, legend_cols=2, legend_position='top_right'
+        )
+
+    def feature_imp(self, df, model):
+        """
+        Desc: Feature Importance we can check using this function.
+        :param df: Pandas DataFrame
+        :param model: Pass Algo to get the feature importance
+        :return: Sort feature importance
+        """
+        fi = pd.DataFrame()
+        fi["feature"] = df.columns
+        fi["importance"] = model.feature_importances_
+        return fi.sort_values(by="importance", ascending=False)
+
+    def feature_imp_chart(self, df, model):
+        """
+        Desc: Feature Importance Chart we can check using this function.
+        :param df: Pandas DataFrame
+        :param model: Pass Algo to get the feature importance
+        :return: Sort feature importance chart
+        """
+        return self.feature_imp(df, model).plot(kind='barh', figsize=(12, 7), legend=False)
 
 class MLModels:
     def linearModel(self, x, y):
@@ -838,3 +909,38 @@ class TestModel:
         tspred['Prediction'] = pred
         tspred["Actual"] = Y
         return tspred
+
+
+class Evaluation:
+    from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+
+    def clf_evaluation(self, clf, X_train, y_train, X_test, y_test, train=True):
+        """
+        desc: Classification evaluation Method:- Model is to evaluate the all aspects of your model.
+        :param clf: Model Object Eg: Decision tree, Logistic Regression etc.
+        :param X_train: 80% Data of training part except target feature
+        :param y_train: 80% data of training part of target feature
+        :param X_test: 20% Data of training part except target feature
+        :param y_test: 20% data of training part of target feature
+        :param train:
+        :return:
+        """
+        if train:
+            pred = clf.predict(X_train)
+            clf_report = pd.DataFrame(classification_report(y_train, pred, output_dict=True))
+            print("Train Result:\n================================================")
+            print(f"Accuracy Score: {accuracy_score(y_train, pred) * 100:.2f}%")
+            print("_______________________________________________")
+            print(f"CLASSIFICATION REPORT:\n{clf_report}")
+            print("_______________________________________________")
+            print(f"Confusion Matrix: \n {confusion_matrix(y_train, pred)}\n")
+
+        elif train == False:
+            pred = clf.predict(X_test)
+            clf_report = pd.DataFrame(classification_report(y_test, pred, output_dict=True))
+            print("Test Result:\n================================================")
+            print(f"Accuracy Score: {accuracy_score(y_test, pred) * 100:.2f}%")
+            print("_______________________________________________")
+            print(f"CLASSIFICATION REPORT:\n{clf_report}")
+            print("_______________________________________________")
+            print(f"Confusion Matrix: \n {confusion_matrix(y_test, pred)}\n")
